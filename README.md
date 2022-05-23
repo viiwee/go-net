@@ -14,6 +14,7 @@
 ## References
 https://www.programming-books.io/essential/go/
 https://www.rapid7.com/blog/post/2016/08/04/build-a-simple-cli-tool-with-golang/
+https://github.com/blackhat-go/bhg/
 
 ## Go Basic Types
 bool
@@ -24,3 +25,11 @@ byte (aka uint8)
 rune (aka int32)
 float 32, float64
 compelx64, complex128
+
+## Ideas
+### Channels
+Run a dictionary over passwords, or something and send those values to a channel to save time.
+Compare run time without using channels and see if it saves any.
+https://go.dev/tour/concurrency/2
+https://github.com/kubernetes/kubernetes/blob/cd6ffff85d257ff9067d59339f2ffdbcc66dc164/staging/src/k8s.io/client-go/tools/portforward/portforward_test.go
+

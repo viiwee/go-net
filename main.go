@@ -3,28 +3,31 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"strconv"
+	"net"
+	"strings"
 )
 
-//Declare variables and set their type
-var int1 int
+type resultPorts struct {
+	Port int
+	Open bool
+}
 
+func scan(host string, port string) {
+	_, err := net.Dial("tcp", host+":"+port)
+	if err == nil {
+		fmt.Printf("Connection successful to %s:%s\n", host, port)
+	}
+}
 func main() {
-	textPtr := flag.String("text", "", "Text to parse.")
-	metricPtr := flag.String("metric", "chars", "Metric {chars|words|lines}")
-	uniquePtr := flag.Bool("unique", false, "Measure unique values of a metric")
-	// Actually parse the vars inputted by the user
+	portsPtr := flag.String("ports", "", "Comma separated list of ports")
+	hostPtr := flag.String("host", "", "Hostname or IP address that you want to scan")
 	flag.Parse()
 
-	if *textPtr == "" {
-		flag.PrintDefaults()
-		fmt.Printf("textPtr: %s, metricPtr: %s, uniquePtr: %t\n", *textPtr, *metricPtr, *uniquePtr)
-		os.Exit(1)
+	if *portsPtr == "" || *hostPtr == "" {
+		fmt.Println("Please supply a value for ports and host")
 	}
-	fmt.Printf("textPtr: %s, metricPtr: %s, uniquePtr: %t\n", *textPtr, *metricPtr, *uniquePtr)
-
-	int1 = 12
-	fmt.Printf("Your int as an int: %d\n", int1)
-	fmt.Printf("Your int as a string: %s\n", strconv.Itoa(int1))
+	ports := strings.Split(*portsPtr, ",")
+	for i := 0; i < len(ports); i++ {
+		go scan(*hostPtr, ports[i])
+	}
 }
