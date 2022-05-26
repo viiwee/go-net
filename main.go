@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"bufio"
 	"log"
 	"net"
 )
@@ -10,27 +10,26 @@ func echo(conn net.Conn) {
 	//When this function ends, close the connection
 	defer conn.Close()
 
-	//Buffer for data
-	b := make([]byte, 512)
+	//Create a reader and writer for the data coming in
+	reader := bufio.NewReader(conn) //net.Conn has both a Read() and Write() function, making it both a reader and listener
+	writer := bufio.NewWriter(conn)
 	for {
-		//Receive data from the connection
-		//Standard read format (size of data, error)
-		size, err := conn.Read(b[0:])
-		if err == io.EOF {
-			//EOF means the client closed the connection
-			log.Println("Client disconnected")
-			break
-		}
+		s, err := reader.ReadString('\n')
 		if err != nil {
-			//Unknown error
-			log.Println("Unexpected Error!")
-			break
+			log.Fatalln("Failed to read string")
 		}
-		log.Printf("Received %d bytes: %s\n", size, string(b))
+		log.Printf("Read %d bytes: %s", len(s), s)
 
-		//Send the data back to the client
-		if _, err := conn.Write(b[0:size]); err != nil {
-			log.Fatalln("Unable to write data!")
+		log.Println("Writing data")
+
+		//Cast s to a byte, and write it out to the connection
+		writer.Write
+		if _, err := writer.Write([]byte(s)); err != nil {
+			println("Error writing data")
+		}
+		err = writer.Flush()
+		if err != nil {
+			println("Error flushing data")
 		}
 	}
 }
