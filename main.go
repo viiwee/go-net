@@ -1,54 +1,68 @@
 package main
 
 import (
-	"bufio"
+	"fmt"
+	"io"
 	"log"
 	"net"
 )
 
-func echo(conn net.Conn) {
-	//When this function ends, close the connection
-	defer conn.Close()
+const remoteHost string = "example.com"
+const webProtocol string = "80"
 
-	//Create a reader and writer for the data coming in
-	reader := bufio.NewReader(conn) //net.Conn has both a Read() and Write() function, making it both a reader and listener
-	writer := bufio.NewWriter(conn)
-	for {
-		s, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatalln("Failed to read string")
-		}
-		log.Printf("Read %d bytes: %s", len(s), s)
-
-		log.Println("Writing data")
-
-		//Cast s to a byte, and write it out to the connection
-		writer.Write
-		if _, err := writer.Write([]byte(s)); err != nil {
-			println("Error writing data")
-		}
-		err = writer.Flush()
-		if err != nil {
-			println("Error flushing data")
-		}
+func relayHTTP(src net.Conn) {
+	//Connect to our remote host
+	fmt.Printf("Dialing %s:%s\n", remoteHost, webProtocol)
+	dst, err := net.Dial("tcp", remoteHost+":"+webProtocol)
+	if err != nil {
+		println("Error dialing remote host")
+		dst.Close()
+		return
 	}
+	defer dst.Close()
+
+	//Copy traffic from source to remote
+	go func() {
+		fmt.Println("source -> dest")
+		written, err := io.Copy(dst, src)
+		if err != nil {
+			log.Fatalln("Error reading/writing")
+		}
+		fmt.Printf(
+			"Sending %d bytes from %s to %s\n",
+			written,
+			src.RemoteAddr(),
+			dst.RemoteAddr())
+	}()
+
+	//Copy responses from remote to source
+	fmt.Println("dest -> source")
+	written, err := io.Copy(src, dst)
+	if err != nil {
+		log.Fatalln("Error reading/writing")
+	}
+	fmt.Printf(
+		"Sending %d bytes from %s to %s\n",
+		written,
+		dst.RemoteAddr(),
+		src.RemoteAddr())
 }
 
 func main() {
-	//Configure a listener
-	listener, err := net.Listen("tcp", ":25565")
+	//Setup listener for incoming traffic on 443
+	//Accept new connections, and then forward the connection into the relay
+	//Loop back
+	fmt.Println("Listening on :80 for new connections")
+	listener, err := net.Listen("tcp", ":"+webProtocol)
 	if err != nil {
-		log.Fatalln("Unable to bind to port, is port already listening?")
+		log.Fatalln("Could not setup listener on :80, already listening?")
 	}
-	log.Println("Listening on 0.0.0.0:25565")
 	for {
-		//Loop, waiting for connections and then setting up the echo server for each
-		conn, err := listener.Accept() //This will wait until a client connects. And then it will return a conn instance
-		log.Println("Received connection")
+		conn, err := listener.Accept()
 		if err != nil {
-			log.Fatalln("Unable to accept connection")
+			log.Fatalln("Unable to accept new connection")
 		}
-		//Handle the connection using the echo function we created earlier
-		go echo(conn)
+		fmt.Printf("Started new connection, %s\n", conn.RemoteAddr())
+		go relayHTTP(conn)
 	}
 }
